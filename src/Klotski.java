@@ -50,18 +50,18 @@ class Block {
             yBlock.add(y);
             xBlock.add(x);
             // block connects upward
-            if(y == g.board.length - 1 || (y != 0 && g.board[y-1][x] == 2 && g.board[y+1][x] != 2)) {
+            if(y - 1 >= 0 && g.board[y-1][x] == 2 && y + 1 < g.board.length && g.board[y+1][x] != 2) {
                 yBlock.add(y-1);
                 xBlock.add(x);
             }
             // block connects downward
-            if(y == 0 || (y != g.board.length - 1 && g.board[y-1][x] != 2 && g.board[y+1][x] == 2)) {
+            if(y - 1 >= 0 && g.board[y-1][x] != 2 && y + 1 < g.board.length && g.board[y+1][x] == 2) {
                 yBlock.add(y+1);
                 xBlock.add(x);
             }
             // both top and bottom are similar
-            if(y!=0 && y!= g.board.length - 1 && g.board[y-1][x] == 2 && g.board[y+1][x] == 2) {
-                if(y-2 > 0 && g.board[y-2][x] == 2) {
+            if(y - 1 >= 0 && g.board[y-1][x] == 2 && y + 1 < g.board.length && g.board[y+1][x] == 2) {
+                if(y - 2 >= 0 && g.board[y-2][x] == 2) {
                     // connects downward
                     yBlock.add(y+1);
                     xBlock.add(x);
@@ -75,6 +75,15 @@ class Block {
     }
     public boolean canMove(int dy, int dx) {
         if(blockType == 0 || blockType == 4) {
+            return false;
+        }
+        if(blockType == 2 && yBlock.size() != 2) {
+            return false;
+        }
+        if(blockType == 3 && yBlock.size() != 2) {
+            return false;
+        }
+        if(blockType == 1 && yBlock.size() != 4) {
             return false;
         }
         ArrayList<Integer> yRef = new ArrayList<>();
@@ -327,67 +336,105 @@ class AStarSearch{
         while(!openSet.isEmpty()) {
             GameState g = openSet.poll();
             closedSet.add(g);
-            System.out.println("iteration " + ++steps);
-            System.out.println(g.getStateID());
-            g.printBoard();
-            // eventually cost will be steps+heuristic
-            System.out.println(g.steps + " " + g.steps + " " + "0");
-//            if(steps > 3) {
-//                System.exit(0);
-//            }
-            if(g.parent != null) {
-                System.out.println(g.parent.getStateID());
+            steps++;
+            if (flag == 200 || flag == 400) {
+                if (steps == 12)
+                    printClosedList(flag, g);
+                System.out.println("iteration " + steps);
+                System.out.println(g.getStateID());
+                g.printBoard();
+//                // eventually cost will be steps+heuristic
+                int f = g.steps + getHeuristic(flag, g);
+                System.out.println(f + " " + g.steps + " " + getHeuristic(flag, g));
+                if (g.parent != null) {
+                    System.out.println(g.parent.getStateID());
+                } else {
+                    System.out.println("null");
+                }
             }
-            else {
-                System.out.println("null");
-            }
-            if(g.goalCheck()) {
+            goalCheck++;
+            if (g.goalCheck()) {
                 //print info and exit
+                if (flag == 300 || flag == 500) {
+                    ArrayList<GameState> solution = new ArrayList<>();
+                    solution.add(g);
+                    GameState path = g.parent;
+                    while (!path.getStateID().equals(state.getStateID())) {
+                        solution.add(path);
+                        path = path.parent;
+                    }
+                    Collections.reverse(solution);
+                    for (GameState game : solution) {
+                        game.printBoard();
+                        System.out.println();
+                    }
+                    System.out.println("goalCheckTimes " + goalCheck);
+                    System.out.println("maxOPENSize " + maxOPEN);
+                    System.out.println("maxCLOSEDSize " + maxCLOSED);
+                    System.out.println("steps " + g.steps);
+                }
                 return g;
             }
             List<GameState> children = g.getNextStates();
-            for(GameState child : children) {
+            for (GameState child : children) {
                 // eventually cost will be steps+heuristic
                 child.parent = g;
                 child.steps = g.steps + 1;
-                child.cost = steps;
-                if(!openSet.contains(child) && !closedSet.contains(child)) {
-                    openSet.add(child);
+                child.cost = g.steps + getHeuristic(flag, child);
+
+                String childStateId = child.getStateID();
+                boolean inOpen = false;
+                boolean inClosed = false;
+                for (GameState game : openSet) {
+                    if (game.getStateID().equals(childStateId)) {
+                        inOpen = true;
+                    }
                 }
-                else {
+                for (GameState game : closedSet) {
+                    if (game.getStateID().equals(childStateId)) {
+                        inClosed = true;
+                    }
+                }
+                if (!inOpen && !inClosed) {
+                    openSet.add(child);
+                } else {
                     boolean insertStatus = false;
-                    String childStateId = child.getStateID();
-                    if(openSet.contains(child)) {
-                        for(GameState game : openSet) {
-                            if(game.getStateID().equals(childStateId) && child.steps < game.steps) {
+                    if (openSet.contains(child)) {
+                        for (GameState game : openSet) {
+                            if (game.getStateID().equals(childStateId) && child.steps < game.steps) {
                                 game.parent = child.parent;
                                 insertStatus = true;
                             }
                         }
                     }
-                    if(closedSet.contains(child)) {
-                        for(GameState game : closedSet) {
-                            if(game.getStateID().equals(childStateId) && child.steps < game.steps) {
+                    if (closedSet.contains(child)) {
+                        for (GameState game : closedSet) {
+                            if (game.getStateID().equals(childStateId) && child.steps < game.steps) {
                                 game.parent = child.parent;
                                 insertStatus = true;
                             }
                         }
                     }
-                    if(insertStatus) {
-                        openSet.add(child);
+                    if (insertStatus) {
+                       openSet.add(child);
                     }
                 }
             }
-            printOpenList(flag, g);
-            printClosedList(flag, g);
+            if (openSet.size() > maxOPEN) {
+                maxOPEN = openSet.size();
+            }
+            if (closedSet.size() > maxCLOSED) {
+                maxCLOSED = closedSet.size();
+            }
+            if(flag == 200) {
+                printOpenList(flag, g);
+                printClosedList(flag, g);
+            }
+
         }
 
         System.out.println("PQ is empty. No solution found.");
 
-        System.out.println("goalCheckTimes " + goalCheck);
-        System.out.println("maxOPENSize " + maxOPEN);
-        System.out.println("maxCLOSEDSize " + maxCLOSED);
-        System.out.println("steps " + steps);
         return state;
     }
 
@@ -407,6 +454,13 @@ class AStarSearch{
             }
         }
         return Math.abs(yBottomRight - 4) + Math.abs(xBottomRight - 2);
+    }
+
+    public int getHeuristic(int flag, GameState g) {
+        if(flag == 400 || flag == 500) {
+            return manhattanHeuristic(g);
+        }
+        return 0;
     }
 }
 
