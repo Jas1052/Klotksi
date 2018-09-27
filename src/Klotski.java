@@ -298,6 +298,9 @@ class AStarSearch{
 
     // print the states of board in open set
     public void printOpenList(int flag, GameState state) {
+        if(flag != 200) {
+            return;
+        }
         System.out.println("OPEN");
         for(GameState game : openSet) {
             System.out.println(game.getStateID());
@@ -308,6 +311,9 @@ class AStarSearch{
     }
 
     public void printClosedList(int flag, GameState state) {
+        if(flag != 200) {
+            return;
+        }
         System.out.println("CLOSED");
         for(GameState game : closedSet) {
             System.out.println(game.getStateID());
@@ -343,7 +349,6 @@ class AStarSearch{
                 System.out.println("iteration " + steps);
                 System.out.println(g.getStateID());
                 g.printBoard();
-//                // eventually cost will be steps+heuristic
                 int f = g.steps + getHeuristic(flag, g);
                 System.out.println(f + " " + g.steps + " " + getHeuristic(flag, g));
                 if (g.parent != null) {
@@ -377,7 +382,6 @@ class AStarSearch{
             }
             List<GameState> children = g.getNextStates();
             for (GameState child : children) {
-                // eventually cost will be steps+heuristic
                 child.parent = g;
                 child.steps = g.steps + 1;
                 child.cost = g.steps + getHeuristic(flag, child);
@@ -426,11 +430,8 @@ class AStarSearch{
             if (closedSet.size() > maxCLOSED) {
                 maxCLOSED = closedSet.size();
             }
-            if(flag == 200) {
-                printOpenList(flag, g);
-                printClosedList(flag, g);
-            }
-
+            printOpenList(flag, g);
+            printClosedList(flag, g);
         }
 
         System.out.println("PQ is empty. No solution found.");
@@ -485,9 +486,6 @@ public class Klotski {
             }
         }
         GameState s = new GameState(board, 0);
-
-        s.printBoard();
-        System.out.println("---");
 
         if (flag == 100) {
             printNextStates(s);
